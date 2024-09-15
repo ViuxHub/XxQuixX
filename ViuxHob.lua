@@ -5,7 +5,7 @@ local Window = Library.CreateLib("ViuxHob", "DarkTheme")
 
 -- Main Tab
 local Tab = Window:NewTab("Main")
-local Main = Tab:NewSection("Combat")
+local Main = Tab:NewSection("Combat/Player")
 
 Main:NewToggle("Auto Parry", "Auto Parry the ball if it's close & is targeting you.", function(state)
     local runService = game:GetService("RunService")
@@ -68,5 +68,97 @@ Main:NewToggle("Auto Parry", "Auto Parry the ball if it's close & is targeting y
     else
         lastBallPressed = nil
         isKeyPressed = false
+    end
+end)
+
+
+-- Misc Tab
+local Misc = Tab:NewSection("Extra")
+
+Misc:NewToggle("Follow Ball", "Fly towards the ball at a very situational speed", function(state)
+    getgenv().FB = state
+end)
+
+spawn(function()
+    local TweenService = game:GetService("TweenService")
+    local plr = game.Players.LocalPlayer
+    local Ball = workspace:WaitForChild("Balls")
+    local currentTween = nil
+
+    while true do
+        wait(0.001)
+        if getgenv().FB then
+            local ball = Ball:FindFirstChildOfClass("Part")
+            local char = plr.Character
+            if ball and char then
+                local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, false, 0)
+                local distance = (char.PrimaryPart.Position - ball.Position).magnitude
+                if distance <= 1000 then 
+                    if currentTween then
+                        currentTween:Pause()
+                    end
+                    currentTween = TweenService:Create(char.PrimaryPart, tweenInfo, {CFrame = ball.CFrame})
+                    currentTween:Play()
+                end
+            end
+        else
+            if currentTween then
+                currentTween:Pause()
+                currentTween = nil
+            end
+        end
+    end
+end)
+
+Misc:NewToggle("Night Mode", "Turns the atmosphere into night", function(state)
+    getgenv().NM = state
+end)
+
+task.defer(function()
+    while task.wait(1) do
+        local tweenService = game:GetService("TweenService")
+        local lighting = game:GetService("Lighting")
+        if getgenv().NM then
+            tweenService:Create(lighting, TweenInfo.new(3), {ClockTime = 3.9}):Play()
+        else
+            tweenService:Create(lighting, TweenInfo.new(3), {ClockTime = 13.5}):Play()
+        end
+    end
+end)
+
+-- Shop Tab
+local Shop = Tab:NewSection("Crates")
+
+Shop:NewButton("Buy Sword Crate", "Buys the sword crate for everytime you click this button.", function() 
+    game:GetService("ReplicatedStorage").Remote.RemoteFunction:InvokeServer("PromptPurchaseCrate", workspace.Spawn.Crates.NormalSwordCrate)
+end)
+
+Shop:NewButton("Buy Explosion Crate", "Buys the explosion crate for everytime you click this button.", function() 
+    game:GetService("ReplicatedStorage").Remote.RemoteFunction:InvokeServer("PromptPurchaseCrate", workspace.Spawn.Crates.NormalExplosionCrate)
+end)
+
+Shop:NewToggle("Auto Buy Sword Crate", "If on it'll automatically buy the sword crate as long as you have money.", function(state) 
+    getgenv().ASC = state
+end)
+
+Shop:NewToggle("Auto Buy Explosion Crate", "If on it'll automatically buy explosion crate for as long as you have money", function(state) 
+    getgenv().AEC = state
+end)
+
+spawn(function()
+    while true do
+        wait(0.01)
+        if getgenv().ASC then
+            game:GetService("ReplicatedStorage").Remote.RemoteFunction:InvokeServer("PromptPurchaseCrate", workspace.Spawn.Crates.NormalSwordCrate)
+        end
+    end
+end)
+
+spawn(function()
+    while true do
+        wait(0.01)
+        if getgenv().AEC then
+            game:GetService("ReplicatedStorage").Remote.RemoteFunction:InvokeServer("PromptPurchaseCrate", workspace.Spawn.Crates.NormalExplosionCrate)
+        end
     end
 end)
